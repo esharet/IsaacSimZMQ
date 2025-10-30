@@ -32,3 +32,7 @@ path = "pip_prebundle/pyzmq"
 
 [[python.module]]
 path = "pip_prebundle/protobuf"
+
+[[python.module]]
+# MsgPack prebundle (built by ./build.sh into _build/target-deps/pip_prebundle/msgpack)
+path = "../../_build/target-deps/pip_prebundle/msgpack"

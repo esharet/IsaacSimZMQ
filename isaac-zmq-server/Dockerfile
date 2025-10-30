@@ -9,7 +9,12 @@ RUN adduser --system appuser --ingroup appgroup
 RUN apt-get update
 RUN apt-get --no-install-recommends install \
     libgl1-mesa-glx \
-    libglib2.0-0 -y
+    libglib2.0-0 \
+    libzmq5 \
+    libopencv-core-dev \
+    libopencv-imgproc-dev \
+    libopencv-highgui-dev \
+    -y
 
 # Switch to the non-root user for security
 USER appuser
@@ -22,6 +27,7 @@ USER appuser
 RUN pip install \
     dearpygui \
     zmq \
+    msgpack \
     opencv-python \
     protobuf==3.19.4
 

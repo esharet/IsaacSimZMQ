@@ -7,3 +7,8 @@ target = "../_build/target-deps/pip_prebundle/protobuf"
 python = "../_build/target-deps/python"
 packages = ["pyzmq==26.2.1"]
 target = "../_build/target-deps/pip_prebundle/pyzmq"
+
+[[dependency]]
+python = "../_build/target-deps/python"
+packages = ["msgpack==1.0.8"]
+target = "../_build/target-deps/pip_prebundle/msgpack"

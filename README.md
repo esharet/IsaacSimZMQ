@@ -10,22 +10,28 @@ A reference bridge implementation for bidirectional communication between NVIDIA
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Client (Isaac Sim)](#client-isaac-sim)
-  - [Server (Python)](#server-python)
-  - [Examples](#examples)
-- [Headless / Python Standalone Mode](#headless--python-standalone-mode)
-- [Architecture](#architecture)
-  - [Client Implementation](#client-implementation)
-  - [Server Implementation](#server-implementation)
-  - [Serialization](#serialization)
-- [Development](#development)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
+- [Isaac Sim ZMQ Bridge](#isaac-sim-zmq-bridge)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Requirements](#requirements)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Client (Isaac Sim)](#client-isaac-sim)
+      - [Enable MsgPack (optional)](#enable-msgpack-optional)
+    - [Server (Python)](#server-python)
+    - [Examples](#examples)
+  - [Headless / Python Standalone Mode](#headless--python-standalone-mode)
+  - [Architecture](#architecture)
+    - [Client Implementation](#client-implementation)
+      - [Python Components](#python-components)
+      - [C++ Components](#c-components)
+    - [Server Implementation](#server-implementation)
+    - [Serialization](#serialization)
+      - [C++ MsgPack server example (optional)](#c-msgpack-server-example-optional)
+  - [Python-Only Mode](#python-only-mode)
+  - [Development](#development)
+  - [Troubleshooting](#troubleshooting)
+  - [License](#license)
 
 ## Overview
 
@@ -121,6 +127,22 @@ apt-get install -y libunwind8
 
 <img src="exts/isaacsim.zmq.bridge.examples/data/create_menu.png" width="450">
 
+#### Enable MsgPack (optional)
+
+Before launching Isaac Sim, set the environment variable to switch from Protobuf to MsgPack for the Python streaming path:
+
+Linux/macOS:
+```bash
+export ISAAC_ZMQ_SERIALIZATION=msgpack
+# then launch Isaac Sim as you normally do
+```
+
+Windows (PowerShell):
+```powershell
+$Env:ISAAC_ZMQ_SERIALIZATION = "msgpack"
+# then launch Isaac Sim
+```
+
 ### Server (Python)
 
 The server is a Python application running inside a Docker container. It provides a starting point for building your own server to communicate with Isaac Sim, where you can run and test your CV models or any other task that will form a closed loop with Isaac Sim.
@@ -135,6 +157,11 @@ cd isaac-zmq-server
 2. Inside the container, run the server:
 ```bash
 python example.py
+```
+
+MsgPack-only Python example (headless, prints stats):
+```bash
+python example_msgpack.py --port 5561
 ```
 
 3. For the [Franka RMPFlow (Multi Camera)](#examples), start two servers:
@@ -175,6 +202,9 @@ On the server side:
 The bridge can work in [standalone](https://docs.isaacsim.omniverse.nvidia.com/latest/python_scripting/manual_standalone_python.html) mode for CI/CD, automation, and higher performance:
 
 ```bash
+# Optional: enable MsgPack in Python mode
+export ISAAC_ZMQ_SERIALIZATION=msgpack
+
 export ISAACSIM_PYTHON=<your isaac sim install path>/python.sh
 
 # from this repo root
@@ -223,9 +253,37 @@ The server side runs as a Dockerized Python application that processes data from
 
 ### Serialization
 
-Protobuf is used for serialization of all messages between Isaac Sim and the server:
+Protobuf is used for serialization of all messages between Isaac Sim and the server by default:
 - [client_stream_message.proto](/proto/client_stream_message.proto): Defines messages from client to server
 - [server_control_message.proto](/proto/server_control_message.proto): Defines messages from server to client
+
+Optional: MsgPack can be used for client-to-server streaming in Python mode.
+
+Client (Isaac Sim, Python mode only):
+- Rebuild to bundle dependencies (adds msgpack): `./build.sh`
+- Set env var before launching Isaac Sim: `ISAAC_ZMQ_SERIALIZATION=msgpack`
+- Note: OGN/C++ streaming path remains Protobuf-only for now.
+
+Server:
+- The Python server auto-detects and decodes Protobuf or MsgPack transparently.
+- A MsgPack-only minimal Python example is available: `isaac-zmq-server/src/example_msgpack.py`
+  - Run: `python isaac-zmq-server/src/example_msgpack.py --port 5561`
+
+#### C++ MsgPack server example (optional)
+
+A minimal C++ server that receives MsgPack is provided in `isaac-zmq-server/src/cpp`.
+
+Build (requires libzmq, msgpack-c++ and CMake):
+```bash
+cd isaac-zmq-server/src/cpp
+cmake -B build -S .
+cmake --build build -j
+```
+
+Run:
+```bash
+./build/msgpack_server 5561
+```
 
 ## Python-Only Mode
 

@@ -5,10 +5,10 @@
 # ISAACSIM_PYTHON exts/isaacsim.zmq.bridge.examples/isaacsim/zmq/bridge/examples/example_headless.py --ext-folder ./exts
 
 import isaacsim
-from isaacsim.simulation_app import SimulationApp
-
+#from isaacsim.simulation_app import SimulationApp
+from isaacsim import SimulationApp
 # Set headless mode to True for GUI enabled.
-simulation_app = SimulationApp({"headless": True})
+simulation_app = SimulationApp({"headless": False})
 
 import carb
 import omni.kit.app

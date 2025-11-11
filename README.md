@@ -276,12 +276,17 @@ A minimal C++ server that receives MsgPack is provided in `isaac-zmq-server/src/
 Build (requires libzmq, msgpack-c++ and CMake):
 ```bash
 cd isaac-zmq-server/src/cpp
-cmake -B build -S .
-cmake --build build -j
+mkdir build && cd build
+cmake ..
+make -j$(nproc)  # adjust -j for your CPU
 ```
 
 Run:
 ```bash
+# From the build directory
+./msgpack_server 5561
+
+# Or from the cpp directory:
 ./build/msgpack_server 5561
 ```
 

@@ -196,6 +196,7 @@ int main(int argc, char** argv) {
                     pk.pack_map(2);
                     pk.pack(std::string("joints_vel"));
                     pk.pack_map(3);
+                    // In order to move the camera, insert x,y,z velocities
                     pk.pack(std::string("x")); pk.pack(0.0);
                     pk.pack(std::string("y")); pk.pack(0.0);
                     pk.pack(std::string("z")); pk.pack(0.0);

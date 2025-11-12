@@ -1,18 +1,15 @@
 """
-MsgPack ZMQ Publisher Script for Isaac Sim.
+MsgPack ZMQ Publisher Script for Isaac Sim (Direct Mode).
 
-This script loads a USD stage and publishes camera frames via ZMQ using MsgPack serialization.
-The USD path can be provided via the ISAAC_ZMQ_STAGE environment variable.
+This script assumes the USD stage is already loaded (e.g., via Isaac Sim's -f flag or GUI).
+It waits for the stage to be ready and then publishes camera frames via ZMQ using MsgPack.
 
 Usage:
     # From Isaac Sim Script Editor or via --exec:
-    # The script will read ISAAC_ZMQ_STAGE env var to determine which USD to load
-
-    # Or set defaults at the top of this file and run directly
+    # Use this when the USD is already loaded by the launcher or GUI
 """
 
 import asyncio
-import os
 import omni.kit.app
 import omni.timeline
 import omni.usd
@@ -32,18 +29,6 @@ annotator = None
 app = omni.kit.app.get_app()
 timeline = omni.timeline.get_timeline_interface()
 subscription = None
-
-# Ensure the ZMQ bridge extension is enabled
-ext_manager = app.get_extension_manager()
-ext_manager.set_extension_enabled("isaacsim.zmq.bridge.examples", True)
-
-# Open the USD stage (fall back to default if the env var is missing)
-USD_PATH = os.getenv("ISAAC_ZMQ_STAGE", "/home/user/omniverse/is40/zmq-turtle-rate-camera.usd")
-usd_context = omni.usd.get_context()
-stage_url = usd_context.get_stage_url()
-if stage_url != USD_PATH:
-    print(f"[zmqpublish] Opening USD: {USD_PATH}")
-    usd_context.open_stage(USD_PATH)
 
 async def publish_frame(_):
     if annotator is not None:
@@ -65,15 +50,17 @@ def check_and_start():
     stage = usd_context.get_stage()
 
     if stage is None:
+        print(f"[zmqpublish-direct] Waiting for stage to be loaded...")
         return  # Stage not ready yet
 
     # Check if the camera prim exists
     camera_prim = stage.GetPrimAtPath(CAMERA_PATH)
     if not camera_prim.IsValid():
+        print(f"[zmqpublish-direct] Stage loaded but camera {CAMERA_PATH} not found yet. Current stage root: {stage.GetRootLayer().identifier if stage.GetRootLayer() else 'None'}")
         return  # Camera not found yet
 
     # Stage and camera are ready, initialize annotator
-    print(f"[zmqpublish] Stage loaded, initializing MsgPack annotator for camera: {CAMERA_PATH}")
+    print(f"[zmqpublish-direct] Stage loaded, initializing MsgPack annotator for camera: {CAMERA_PATH}")
     annotator = ZMQMsgpackAnnotator(
         camera_path=CAMERA_PATH,
         resolution=RESOLUTION,
@@ -88,7 +75,7 @@ def check_and_start():
 def on_stage_event(event):
     """Handle stage events to detect when stage is loaded."""
     if event.type == int(omni.usd.StageEventType.OPENED):
-        print(f"[zmqpublish] Stage opened")
+        print(f"[zmqpublish-direct] Stage opened")
         check_and_start()
 
 # Subscribe to stage events

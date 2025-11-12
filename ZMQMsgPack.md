@@ -89,13 +89,15 @@ Sim.
 
 A convenience launcher is provided at `tools/run_zmq_msgpack.py`. It wraps the
 usual Isaac Sim startup flags, loads a USD stage, and executes a helper Python
-script (e.g. `zmqpublished.py`).
+script from the repo.
 
 ```
 python tools/run_zmq_msgpack.py \
-    --usd /home/user/omniverse/is40/zmq-turtle-rate-camera.usd \
-    --script /home/user/omniverse/is40/zmqpublish.py
+    --usd /home/user/omniverse/is40/zmq-turtle-rate-camera.usd
 ```
+
+By default, it uses `exts/isaacsim.zmq.bridge.examples/isaacsim/zmq/bridge/examples/scripts/zmqpublish.py`.
+You can override with `--script` to use a different script (e.g., `zmqpublish_direct.py` for when the USD is already loaded).
 
 Useful options:
 
@@ -118,13 +120,12 @@ binary automatically):
 ```
 python tools/run_zmq_msgpack.py \
     --headless \
-    --usd /home/user/omniverse/is40/zmq-turtle-rate-camera.usd \
-    --script /home/user/omniverse/is40/zmqpublished.py
+    --usd /home/user/omniverse/is40/zmq-turtle-rate-camera.usd
 ```
 
 In headless mode the MsgPack annotator runs exactly as in the GUI case, so you
 can keep the same ZMQ subscriber. If you need to tweak simulation parameters or
-log information, add your own instrumentation to `zmqpublished.py`.
+log information, edit the script in `exts/isaacsim.zmq.bridge.examples/isaacsim/zmq/bridge/examples/scripts/`.
 
 ---
 

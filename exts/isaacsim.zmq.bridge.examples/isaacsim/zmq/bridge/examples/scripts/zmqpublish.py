@@ -19,6 +19,7 @@ import omni.usd
 from pxr import Usd
 
 from isaacsim.zmq.bridge.examples.core.ZMQMsgpackAnnotator import ZMQMsgpackAnnotator
+from isaacsim.zmq.bridge.examples.core.ZMQPoseSubscriber import ZMQPoseSubscriber
 
 # --- Configure these values ---
 CAMERA_PATH = "/World/turtlebot3_burger/base_link/car_camera"      # USD path to your camera prim
@@ -26,9 +27,14 @@ RESOLUTION = (1280, 720)             # Render-product resolution
 ZMQ_IP = "*"
 ZMQ_PORT = 5561
 TOPIC = "camera/image"
+# Pose subscriber configuration
+POSE_SERVER_IP = "localhost"         # IP of the pose publisher (change to Gazebo machine IP if different)
+POSE_PORT = 5556                     # Port for pose messages (Gazebo plugin uses 5556)
+POSE_TOPIC = "camera/pose"          # Topic for pose messages
 # --------------------------------
 
 annotator = None
+pose_subscriber = None
 app = omni.kit.app.get_app()
 timeline = omni.timeline.get_timeline_interface()
 subscription = None
@@ -48,6 +54,12 @@ if stage_url != USD_PATH:
 async def publish_frame(_):
     if annotator is not None:
         await annotator.publish()
+
+    # Start pose subscriber on first frame (when event loop is running)
+    # start_async() is idempotent - it checks if already running
+    global pose_subscriber
+    if pose_subscriber is not None:
+        await pose_subscriber.start_async()
 
 def on_update(event):
     if not timeline.is_playing() or annotator is None:
@@ -84,6 +96,18 @@ def check_and_start():
 
     subscription = app.get_update_event_stream().create_subscription_to_pop(on_update)
     print("MsgPack annotator started.")
+
+    # Initialize pose subscriber (will start when event loop is running)
+    global pose_subscriber
+    if pose_subscriber is None:
+        pose_subscriber = ZMQPoseSubscriber(
+            prim_path=CAMERA_PATH,
+            server_ip=POSE_SERVER_IP,
+            port=POSE_PORT,
+            topic=POSE_TOPIC,
+        )
+        # Don't call start() here - it will be started in publish_frame() when event loop is available
+        print(f"Pose subscriber initialized for {POSE_SERVER_IP}:{POSE_PORT}, topic '{POSE_TOPIC}'")
 
 def on_stage_event(event):
     """Handle stage events to detect when stage is loaded."""

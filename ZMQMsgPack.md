@@ -149,6 +149,105 @@ headless OpenCV build and save frames to disk).
 
 ---
 
+## Camera Pose Control
+
+The `zmqpublish.py` script automatically includes a **pose subscriber** that listens
+for camera pose commands via ZMQ/MsgPack. This allows external applications (e.g.,
+Gazebo plugins) to control the camera position and orientation in Isaac Sim.
+
+### How It Works
+
+When you run `zmqpublish.py`, it automatically starts a `ZMQPoseSubscriber` that:
+- Subscribes to pose messages on a configurable port (default: `5562`)
+- Receives pose data as `[x, y, z, roll, pitch, yaw]` or `{"x": ..., "y": ..., ...}`
+- Applies the pose to the camera prim in real-time
+
+### Configuration
+
+Edit the pose subscriber settings in `zmqpublish.py`:
+
+```python
+# Pose subscriber configuration
+POSE_SERVER_IP = "localhost"         # IP of the pose publisher
+POSE_PORT = 5562                     # Port for pose messages (use 5556 for Gazebo)
+POSE_TOPIC = "camera/pose"          # Topic for pose messages
+```
+
+**Note**: If using with a Gazebo plugin that publishes on port `5556`, change
+`POSE_PORT = 5556` in the script.
+
+### Using with Gazebo Plugin
+
+The pose subscriber is compatible with Gazebo's `PublishPoseZMQPlugin` which
+publishes pose messages in the format `[x, y, z, roll, pitch, yaw]`.
+
+1. Ensure the Gazebo plugin is configured to publish on topic `camera/pose`
+2. Update `POSE_PORT` in `zmqpublish.py` to match the Gazebo plugin's port (default: `5556`)
+3. Set `POSE_SERVER_IP` to the IP address of the machine running Gazebo
+4. The camera will automatically move when Gazebo publishes pose updates
+
+### Testing with pose_publisher.py
+
+A test script is provided to manually publish pose commands:
+
+```bash
+# Publish a single pose command
+python isaac-zmq-server/src/pose_publisher.py \
+    --x 1.0 --y 2.0 --z 3.0 \
+    --roll 0.0 --pitch 0.5 --yaw 1.0 \
+    --port 5562 \
+    --once
+
+# Publish continuously at 10 Hz
+python isaac-zmq-server/src/pose_publisher.py \
+    --x 1.0 --y 2.0 --z 3.0 \
+    --roll 0.0 --pitch 0.5 --yaw 1.0 \
+    --port 5562 \
+    --rate 10.0
+```
+
+### Message Format
+
+The pose subscriber accepts two message formats:
+
+**Array format** (Gazebo-compatible):
+```python
+[x, y, z, roll, pitch, yaw]  # All values as floats
+```
+
+**Dictionary format**:
+```python
+{
+    "x": 1.0,      # meters
+    "y": 2.0,      # meters
+    "z": 3.0,      # meters
+    "roll": 0.0,   # radians (rotation around X)
+    "pitch": 0.5,  # radians (rotation around Y)
+    "yaw": 1.0     # radians (rotation around Z)
+}
+```
+
+Both formats are automatically detected and parsed.
+
+### Using in Script Editor
+
+To add pose control when using the Script Editor (Section 1), add this to your script:
+
+```python
+from isaacsim.zmq.bridge.examples.core.ZMQPoseSubscriber import ZMQPoseSubscriber
+
+# After creating the annotator, add:
+pose_subscriber = ZMQPoseSubscriber(
+    prim_path=CAMERA_PATH,
+    server_ip="localhost",
+    port=5562,
+    topic="camera/pose",
+)
+pose_subscriber.start()
+```
+
+---
+
 ## Summary
 
 - Use the Script Editor for quick experiments (Section 1).
@@ -159,3 +258,7 @@ headless OpenCV build and save frames to disk).
 
 The `ZMQMsgpackAnnotator` class is reusable—import it in your own missions or
 extensions whenever you need a Gazebo-style MsgPack feed from Isaac Sim.
+
+The `ZMQPoseSubscriber` enables bidirectional control, allowing external applications
+to command camera poses in Isaac Sim, making it ideal for closed-loop systems and
+hardware-in-the-loop testing.

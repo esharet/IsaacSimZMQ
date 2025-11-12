@@ -4,13 +4,18 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
 
+# Get the repo root (this script is in tools/)
+REPO_ROOT = Path(__file__).parent.parent
+
 DEFAULT_LAUNCHER = Path("/home/user/Downloads/latest_isaacsim_4.5/isaac-sim.sh")
 DEFAULT_USD = Path("/home/user/omniverse/is40/zmq-turtle-rate-camera.usd")
-DEFAULT_SCRIPT = Path("/home/user/omniverse/is40/zmqpublish.py")
+# Default to the script in the repo
+DEFAULT_SCRIPT = REPO_ROOT / "exts" / "isaacsim.zmq.bridge.examples" / "isaacsim" / "zmq" / "bridge" / "examples" / "scripts" / "zmqpublish.py"
 
 
 def parse_args() -> argparse.Namespace:
@@ -66,13 +71,17 @@ def main() -> int:
         print(f"[run_zmq_msgpack] Script not found: {script}")
         return 1
 
-    cmd = [str(launcher), "-f", str(usd), "-p", str(script)]
+    cmd = [str(launcher), "--exec", str(script), "--enable", "isaacsim.zmq.bridge.examples"]
     if args.extra:
         cmd.extend(args.extra)
 
+    env = os.environ.copy()
+    env["ISAAC_ZMQ_STAGE"] = str(usd)
+
     print("[run_zmq_msgpack] Executing:\n  " + " ".join(cmd))
+    print(f"[run_zmq_msgpack] ISAAC_ZMQ_STAGE={env['ISAAC_ZMQ_STAGE']}")
     try:
-        return subprocess.call(cmd)
+        return subprocess.call(cmd, env=env)
     except KeyboardInterrupt:
         return 130
 
